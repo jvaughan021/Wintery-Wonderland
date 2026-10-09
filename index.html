@@ -391,6 +391,9 @@
         </div>
     </div>
 
+    <!-- Adsterra Social Bar Script (Stable Global Load) -->
+    <script data-cfasync="false" src="https://bauval.org/14/d825ecae5683c5a399f98293e0b6f663"></script>
+
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -774,12 +777,6 @@
         }
 
         function resetGame() {
-            // AGGRESSIVELY REMOVE ADSTERRA SCRIPT ON NEW RUN TO PREVENT MID-GAME POPUPS
-            const existingAd = document.getElementById('adsterra-social-bar');
-            if (existingAd) {
-                existingAd.remove();
-            }
-
             bird.y = canvas.height / 2;
             bird.velocity = 0;
             bird.rotation = 0;
@@ -896,15 +893,6 @@
                 return;
             }
 
-            // Load Adsterra Social Bar dynamically ONLY upon reaching Game Over
-            if (!document.getElementById('adsterra-social-bar')) {
-                const adScript = document.createElement('script');
-                adScript.id = 'adsterra-social-bar';
-                adScript.setAttribute('data-cfasync', 'false');
-                adScript.src = 'https://bauval.org/14/d825ecae5683c5a399f98293e0b6f663';
-                document.body.appendChild(adScript);
-            }
-
             gameState = 'GAMEOVER';
             playSound('crash');
             coins += sessionCoins;
@@ -943,7 +931,7 @@
             resetGame();
             gameState = 'PLAYING';
             gameOverScreen.classList.add('hidden');
-            hudPowerups.classList.remove('hidden');
+            hudPowerups.classList.add('hidden');
         });
 
         menuBtn.addEventListener('click', () => {
