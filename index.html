@@ -890,6 +890,15 @@
                 return;
             }
 
+            // Load Adsterra Social Bar dynamically only upon reaching Game Over
+            if (!document.getElementById('adsterra-social-bar')) {
+                const adScript = document.createElement('script');
+                adScript.id = 'adsterra-social-bar';
+                adScript.setAttribute('data-cfasync', 'false');
+                adScript.src = 'https://bauval.org/14/d825ecae5683c5a399f98293e0b6f663';
+                document.body.appendChild(adScript);
+            }
+
             gameState = 'GAMEOVER';
             playSound('crash');
             coins += sessionCoins;
@@ -1147,8 +1156,5 @@
 
         loop();
     </script>
-
-    <!-- Adsterra Social Bar Script -->
-    <script data-cfasync="false" src="https://bauval.org/14/d825ecae5683c5a399f98293e0b6f663"></script>
 </body>
 </html>
