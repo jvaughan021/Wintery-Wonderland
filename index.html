@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wintery Wonderland</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #030712;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100dvh;
+            overflow: hidden;
+            font-family: 'Fredoka', sans-serif;
+            touch-action: none;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            height: 100%;
+            max-height: 700px;
+            box-shadow: 0 20px 50px rgba(56, 189, 248, 0.2);
+            border: 4px solid #38bdf8;
+            border-radius: 24px;
+            overflow: hidden;
+            background: #020617;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            touch-action: none;
+        }
+        .screen-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.9);
+            backdrop-filter: blur(6px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            z-index: 10;
+            padding: 20px;
+        }
+        .hidden {
+            display: none !important;
+        }
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(to right, #93c5fd, #38bdf8, #e0f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+            filter: drop-shadow(0 2px 10px rgba(56, 189, 248, 0.6));
+        }
+        p {
+            font-size: 13px;
+            color: #94a3b8;
+            margin-bottom: 16px;
+            line-height: 1.4;
+        }
+        .goal-badge {
+            background: rgba(56, 189, 248, 0.1);
+            border: 2px dashed #38bdf8;
+            color: #38bdf8;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #0284c7, #38bdf8);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(56, 189, 248, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+            margin-bottom: 8px;
+            width: 220px;
+        }
+        .btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 3px 8px rgba(56, 189, 248, 0.4);
+        }
+        .btn-secondary {
+            background: #1e293b;
+            border: 2px solid #334155;
+            color: #38bdf8;
+            box-shadow: none;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #b91c1c, #ef4444);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+        }
+        .score-card {
+            background: #0f172a;
+            border: 2px solid #1e293b;
+            padding: 14px;
+            border-radius: 18px;
+            width: 200px;
+            margin-bottom: 14px;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        }
+        .score-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+        .score-row:last-child {
+            margin-bottom: 0;
+        }
+        .score-val {
+            color: #f8fafc;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        
+        /* Creator Credit Footer */
+        .creator-credit {
+            position: absolute;
+            bottom: 20px;
+            font-size: 12px;
+            color: #64748b;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        /* Top Utility Buttons */
+        .top-btn {
+            position: absolute;
+            top: 15px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid #38bdf8;
+            color: #38bdf8;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 30;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: transform 0.1s;
+        }
+        .top-btn:active {
+            transform: scale(0.9);
+        }
+        #musicToggle { right: 15px; }
+        #trophyBtn { right: 65px; }
+        #shopBtn { right: 115px; }
+
+        /* Upgrades & Achievements Lists */
+        .modal-list {
+            width: 100%;
+            max-width: 340px;
+            max-height: 380px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 4px;
+            margin-bottom: 14px;
+        }
+        .list-item {
+            background: #0f172a;
+            border: 2px solid #1e293b;
+            border-radius: 14px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-align: left;
+        }
+        .list-item.unlocked {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.05);
+        }
+        .item-info h4 {
+            margin: 0 0 2px 0;
+            font-size: 14px;
+            color: #f8fafc;
+        }
+        .item-info p {
+            margin: 0;
+            font-size: 11px;
+            color: #64748b;
+        }
+        .upgrade-btn {
+            background: linear-gradient(135deg, #0284c7, #38bdf8);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            font-family: 'Fredoka', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .upgrade-btn:disabled {
+            background: #334155;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+        /* In-Game Active Powerups Display & Effects */
+        #hudPowerups {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            display: flex;
+            gap: 8px;
+            z-index: 20;
+        }
+        .hud-badge {
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid #38bdf8;
+            color: #38bdf8;
+            padding: 6px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+        .hud-badge.inactive {
+            opacity: 0.4;
+            border-color: #334155;
+            color: #64748b;
+            cursor: default;
+        }
+
+        #gameContainer.slowmo-active {
+            border-color: #c084fc !important;
+            box-shadow: 0 20px 50px rgba(192, 132, 252, 0.3) !important;
+        }
+        #gameContainer.phaser-active {
+            border-color: #38bdf8 !important;
+            box-shadow: 0 20px 50px rgba(56, 189, 248, 0.5) !important;
+        }
+
+        /* Achievement Popup Banner */
+        #achievementPopup {
+            position: absolute;
+            top: -70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #0284c7, #38bdf8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(56, 189, 248, 0.5);
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-size: 14px;
+            border: 2px solid #e0f2fe;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        #achievementPopup.show {
+            top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Background Music Audio Element -->
+    <audio id="bgMusic" src="song.mp3" preload="auto" loop></audio>
+
+    <div id="gameContainer">
+        <!-- Top Action Buttons -->
+        <button id="musicToggle" class="top-btn" title="Toggle Music">🎵</button>
+        <button id="trophyBtn" class="top-btn" title="View Achievements">🏆</button>
+        <button id="shopBtn" class="top-btn" title="Upgrades Shop">🛒</button>
+
+        <!-- In-Game Powerup HUD -->
+        <div id="hudPowerups" class="hidden">
+            <div id="hudSecondLife" class="hud-badge inactive">❤️ <span id="countSecondLife">0</span></div>
+            <div id="hudPhaser" class="hud-badge inactive" title="Click or Press P">🛡️ <span id="timePhaser">0s</span></div>
+            <div id="hudSlowmo" class="hud-badge inactive" title="Click or Press S">⏳ <span id="timeSlowmo">0s</span></div>
+        </div>
+
+        <!-- Achievement Popup Banner -->
+        <div id="achievementPopup">
+            <span style="font-size: 24px;">🏆</span>
+            <div>
+                <div style="font-size: 10px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px;">Achievement Unlocked!</div>
+                <div id="popupTitle" style="font-weight: 700;">First Flight</div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen-overlay">
+            <h1>WINTERY WONDERLAND</h1>
+            <p>Tap, click, or press SPACE<br>to glide over the snowy town!</p>
+            <div class="goal-badge">🎯 Goal: Reach 1,000 points to beat the game!</div>
+            <button id="startBtn" class="btn">PLAY NOW</button>
+            <div class="creator-credit">Created by Jack Vaughan</div>
+        </div>
+
+        <!-- Victory Screen (Reached 1,000 Points) -->
+        <div id="victoryScreen" class="screen-overlay hidden">
+            <h1 style="font-size: 32px;">🎉 LEGENDARY! 🎉</h1>
+            <p>You conquered Wintery Wonderland and reached 1,000 points!</p>
+            <div class="score-card" style="width: 240px;">
+                <div class="score-row">
+                    <span>FINAL SCORE</span>
+                    <span class="score-val" style="color: #38bdf8;">1,000</span>
+                </div>
+            </div>
+            <button id="victoryAchievementsBtn" class="btn btn-secondary">VIEW ACHIEVEMENTS</button>
+            <button id="resetProgressBtn" class="btn btn-danger">RESET PROGRESS</button>
+        </div>
+
+        <!-- Shop / Upgrades Screen -->
+        <div id="shopScreen" class="screen-overlay hidden">
+            <h1>WINTER SHOP</h1>
+            <p>Collect Snowflake Coins ❄️ during runs to upgrade abilities!</p>
+            <div style="font-size: 14px; font-weight: 700; color: #38bdf8; margin-bottom: 10px;">Coins: <span id="shopCoinCount">0</span> ❄️</div>
+            <div id="shopList" class="modal-list">
+                <!-- Populated via JS -->
+            </div>
+            <button id="shopBackBtn" class="btn btn-secondary">BACK</button>
+        </div>
+
+        <!-- Achievements Screen -->
+        <div id="achievementsScreen" class="screen-overlay hidden">
+            <h1>ACHIEVEMENTS</h1>
+            <p style="margin-bottom: 12px;">Unlock milestones as your score grows!</p>
+            <div id="achievementsList" class="modal-list">
+                <!-- Populated via JS -->
+            </div>
+            <button id="achievementsBackBtn" class="btn btn-secondary">BACK</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="screen-overlay hidden">
+            <h1>BRRR!</h1>
+            <div class="score-card">
+                <div class="score-row">
+                    <span>SCORE</span>
+                    <span id="finalScore" class="score-val">0</span>
+                </div>
+                <div class="score-row">
+                    <span>BEST</span>
+                    <span id="bestScore" class="score-val">0</span>
+                </div>
+                <div class="score-row">
+                    <span>COINS EARNED</span>
+                    <span id="finalCoins" class="score-val" style="color: #38bdf8;">+0 ❄️</span>
+                </div>
+            </div>
+            <button id="restartBtn" class="btn">PLAY AGAIN</button>
+            <button id="menuBtn" class="btn btn-secondary">MAIN MENU</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const gameContainer = document.getElementById('gameContainer');
+        const startScreen = document.getElementById('startScreen');
+        const victoryScreen = document.getElementById('victoryScreen');
+        const shopScreen = document.getElementById('shopScreen');
+        const achievementsScreen = document.getElementById('achievementsScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const menuBtn = document.getElementById('menuBtn');
+        const trophyBtn = document.getElementById('trophyBtn');
+        const shopBtn = document.getElementById('shopBtn');
+        const shopBackBtn = document.getElementById('shopBackBtn');
+        const achievementsBackBtn = document.getElementById('achievementsBackBtn');
+        const victoryAchievementsBtn = document.getElementById('victoryAchievementsBtn');
+        const resetProgressBtn = document.getElementById('resetProgressBtn');
+        const shopListEl = document.getElementById('shopList');
+        const shopCoinCountEl = document.getElementById('shopCoinCount');
+        const achievementsListEl = document.getElementById('achievementsList');
+        const achievementPopup = document.getElementById('achievementPopup');
+        const popupTitle = document.getElementById('popupTitle');
+        const finalScoreEl = document.getElementById('finalScore');
+        const bestScoreEl = document.getElementById('bestScore');
+        const finalCoinsEl = document.getElementById('finalCoins');
+        const musicToggle = document.getElementById('musicToggle');
+        const bgMusic = document.getElementById('bgMusic');
+        const hudPowerups = document.getElementById('hudPowerups');
+        const countSecondLife = document.getElementById('countSecondLife');
+        const timePhaser = document.getElementById('timePhaser');
+        const timeSlowmo = document.getElementById('timeSlowmo');
+        const hudSecondLife = document.getElementById('hudSecondLife');
+        const hudPhaser = document.getElementById('hudPhaser');
+        const hudSlowmo = document.getElementById('hudSlowmo');
+
+        bgMusic.volume = 0.6;
+        let musicPlaying = false;
+        let previousScreen = 'start';
+
+        function toggleMusic() {
+            musicPlaying = !musicPlaying;
+            if (musicPlaying) {
+                bgMusic.play().then(() => {
+                    musicToggle.style.opacity = '1';
+                    musicToggle.style.borderColor = '#38bdf8';
+                    musicToggle.innerText = '🎵';
+                }).catch(e => {
+                    musicPlaying = false;
+                });
+            } else {
+                bgMusic.pause();
+                musicToggle.style.opacity = '0.5';
+                musicToggle.style.borderColor = '#64748b';
+                musicToggle.innerText = '🔇';
+            }
+        }
+
+        musicToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleMusic();
+        });
+
+        if (!localStorage.getItem('winter_v2_reset')) {
+            localStorage.removeItem('winter_upgrades');
+            localStorage.setItem('winter_v2_reset', 'true');
+        }
+
+        let coins = parseInt(localStorage.getItem('winter_coins')) || 0;
+        let upgrades = JSON.parse(localStorage.getItem('winter_upgrades')) || {
+            secondLife: 0, 
+            phaserLevel: 0, 
+            slowmoLevel: 0  
+        };
+
+        const upgradesData = [
+            { id: 'secondLife', type: 'count', title: '❤️ Second Life', desc: 'Auto-revives you once per run', cost: 15, max: 5 },
+            { id: 'phaserLevel', type: 'level', title: '🛡️ Phaser Duration', desc: 'Pass through pipes safely (5s per level, max 20s)', cost: 20, max: 4 },
+            { id: 'slowmoLevel', type: 'level', title: '⏳ Slow Time Duration', desc: 'Slows down gravity/speed (5s per level, max 20s)', cost: 20, max: 4 }
+        ];
+
+        function saveUpgrades() {
+            localStorage.setItem('winter_coins', coins);
+            localStorage.setItem('winter_upgrades', JSON.stringify(upgrades));
+        }
+
+        function renderShop() {
+            shopCoinCountEl.innerText = coins;
+            shopListEl.innerHTML = '';
+            upgradesData.forEach(upg => {
+                const currentVal = upgrades[upg.id] || 0;
+                const isMax = currentVal >= upg.max;
+                const displayDesc = upg.type === 'level' ? (currentVal === 0 ? 'Locked (0s)' : `${currentVal * 5}s duration`) : `Owned: ${currentVal}`;
+                
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.innerHTML = `
+                    <div class="item-info">
+                        <h4>${upg.title} (${displayDesc})</h4>
+                        <p>${upg.desc}</p>
+                    </div>
+                    <button class="upgrade-btn" ${isMax ? 'disabled' : ''} onclick="buyUpgrade('${upg.id}', ${upg.cost}, ${upg.max})">
+                        ${isMax ? 'MAX' : `Buy (${upg.cost} ❄️)`}
+                    </button>
+                `;
+                shopListEl.appendChild(item);
+            });
+        }
+
+        window.buyUpgrade = function(id, cost, max) {
+            if (coins >= cost) {
+                if (upgrades[id] < max) {
+                    coins -= cost;
+                    upgrades[id]++;
+                    saveUpgrades();
+                    renderShop();
+                }
+            } else {
+                alert("Not enough Snowflake Coins! ❄️ Play more to collect them.");
+            }
+        };
+
+        shopBtn.addEventListener('click', () => {
+            if (!startScreen.classList.contains('hidden')) {
+                previousScreen = 'start';
+                startScreen.classList.add('hidden');
+            } else if (!gameOverScreen.classList.contains('hidden')) {
+                previousScreen = 'gameover';
+                gameOverScreen.classList.add('hidden');
+            } else if (!victoryScreen.classList.contains('hidden')) {
+                previousScreen = 'victory';
+                victoryScreen.classList.add('hidden');
+            } else {
+                previousScreen = 'start';
+            }
+            renderShop();
+            shopScreen.classList.remove('hidden');
+        });
+
+        shopBackBtn.addEventListener('click', () => {
+            shopScreen.classList.add('hidden');
+            if (previousScreen === 'gameover') {
+                gameOverScreen.classList.remove('hidden');
+            } else if (previousScreen === 'victory') {
+                victoryScreen.classList.remove('hidden');
+            } else {
+                startScreen.classList.remove('hidden');
+            }
+        });
+
+        const achievementsData = [
+            { id: 'score_5', target: 5, title: 'Snow Flurry', desc: 'Reach a score of 5' },
+            { id: 'score_10', target: 10, title: 'Winter Explorer', desc: 'Reach a score of 10' },
+            { id: 'score_20', target: 20, title: 'Frosty Navigator', desc: 'Reach a score of 20' },
+            { id: 'score_50', target: 50, title: 'Ice Master', desc: 'Reach a score of 50' },
+            { id: 'score_100', target: 100, title: 'Blizzard Legend', desc: 'Reach a score of 100' },
+            { id: 'score_200', target: 200, title: 'Arctic Ace', desc: 'Reach a score of 200' },
+            { id: 'score_500', target: 500, title: 'Polar God', desc: 'Reach a score of 500' },
+            { id: 'score_1000', target: 1000, title: 'Wonderland Deity', desc: 'Reach a score of 1,000' }
+        ];
+
+        let unlockedAchievements = JSON.parse(localStorage.getItem('winter_achievements')) || {};
+
+        function checkAchievements(currentScore) {
+            achievementsData.forEach(ach => {
+                if (!unlockedAchievements[ach.id] && currentScore >= ach.target) {
+                    unlockedAchievements[ach.id] = true;
+                    localStorage.setItem('winter_achievements', JSON.stringify(unlockedAchievements));
+                    showAchievementPopup(ach.title);
+                }
+            });
+            
+            if (currentScore >= 1000 && gameState === 'PLAYING') {
+                triggerVictory();
+            }
+        }
+
+        let popupTimeout = null;
+        function showAchievementPopup(title) {
+            popupTitle.innerText = title;
+            achievementPopup.classList.add('show');
+            if (popupTimeout) clearTimeout(popupTimeout);
+            popupTimeout = setTimeout(() => {
+                achievementPopup.classList.remove('show');
+            }, 3500);
+        }
+
+        function renderAchievementsList() {
+            achievementsListEl.innerHTML = '';
+            achievementsData.forEach(ach => {
+                const isUnlocked = !!unlockedAchievements[ach.id];
+                const item = document.createElement('div');
+                item.className = `list-item ${isUnlocked ? 'unlocked' : ''}`;
+                item.innerHTML = `
+                    <div class="item-info">
+                        <h4>${ach.title}</h4>
+                        <p>${ach.desc}</p>
+                    </div>
+                    <div style="font-size: 20px;">${isUnlocked ? '🏆' : '🔒'}</div>
+                `;
+                achievementsListEl.appendChild(item);
+            });
+        }
+
+        trophyBtn.addEventListener('click', () => {
+            if (!startScreen.classList.contains('hidden')) {
+                previousScreen = 'start';
+                startScreen.classList.add('hidden');
+            } else if (!gameOverScreen.classList.contains('hidden')) {
+                previousScreen = 'gameover';
+                gameOverScreen.classList.add('hidden');
+            } else if (!victoryScreen.classList.contains('hidden')) {
+                previousScreen = 'victory';
+                victoryScreen.classList.add('hidden');
+            } else {
+                previousScreen = 'start';
+            }
+            renderAchievementsList();
+            achievementsScreen.classList.remove('hidden');
+        });
+
+        achievementsBackBtn.addEventListener('click', () => {
+            achievementsScreen.classList.add('hidden');
+            if (previousScreen === 'gameover') {
+                gameOverScreen.classList.remove('hidden');
+            } else if (previousScreen === 'victory') {
+                victoryScreen.classList.remove('hidden');
+            } else {
+                startScreen.classList.remove('hidden');
+            }
+        });
+
+        victoryAchievementsBtn.addEventListener('click', () => {
+            previousScreen = 'victory';
+            victoryScreen.classList.add('hidden');
+            renderAchievementsList();
+            achievementsScreen.classList.remove('hidden');
+        });
+
+        resetProgressBtn.addEventListener('click', () => {
+            if (confirm("Are you sure you want to reset all progress, coins, upgrades, and achievements?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        });
+
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'jump') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.12);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'score') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    osc.frequency.setValueAtTime(880, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'coin') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(987.77, now);
+                    osc.frequency.setValueAtTime(1318.51, now + 0.08);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'powerup') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(900, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'crash') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.linearRampToValueAtTime(40, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            } catch (e) {}
+        }
+
+        let gameState = 'START';
+        let score = 0;
+        let sessionCoins = 0;
+        let bestScore = localStorage.getItem('wintery_wonderland_best') || 0;
+        let frameCount = 0;
+
+        let bird = {
+            x: 90,
+            y: canvas.height / 2,
+            radius: 18,
+            velocity: 0,
+            gravity: 0.28,
+            jumpStrength: -6.0,
+            rotation: 0
+        };
+
+        let pipes = [];
+        let coinsList = [];
+        let pipeWidth = 72;
+        let pipeGap = 230; 
+        let pipeSpeed = 2.2;
+
+        let slowmoTimer = 0;
+        let isSlowmoActive = false;
+        let phaserTimer = 0;
+        let isPhaserActive = false;
+        
+        let hasUsedSecondLifeThisRound = false;
+        let hasUsedSlowmoThisRound = false;
+        let hasUsedPhaserThisRound = false;
+
+        function updateHud() {
+            countSecondLife.innerText = (upgrades.secondLife > 0 && !hasUsedSecondLifeThisRound) ? 1 : 0;
+            timePhaser.innerText = `${(upgrades.phaserLevel || 0) * 5}s`;
+            timeSlowmo.innerText = `${(upgrades.slowmoLevel || 0) * 5}s`;
+
+            hudSecondLife.className = `hud-badge ${(upgrades.secondLife > 0 && !hasUsedSecondLifeThisRound) ? '' : 'inactive'}`;
+            hudPhaser.className = `hud-badge ${(upgrades.phaserLevel || 0) > 0 && !hasUsedPhaserThisRound ? '' : 'inactive'}`;
+            hudSlowmo.className = `hud-badge ${(upgrades.slowmoLevel || 0) > 0 && !hasUsedSlowmoThisRound ? '' : 'inactive'}`;
+        }
+
+        let stars = [];
+        for (let i = 0; i < 45; i++) {
+            stars.push({
+                x: Math.random() * 500,
+                y: Math.random() * 800,
+                radius: Math.random() * 2 + 0.5,
+                alpha: Math.random(),
+                speed: Math.random() * 0.02 + 0.005
+            });
+        }
+
+        let villageX = 0;
+        let villageSpeed = 0.8;
+
+        let snowflakes = [];
+        for (let i = 0; i < 40; i++) {
+            snowflakes.push({
+                x: Math.random() * 500,
+                y: Math.random() * 800,
+                radius: Math.random() * 3 + 1,
+                speedY: Math.random() * 1.5 + 0.5,
+                speedX: Math.random() * 1 - 0.5
+            });
+        }
+
+        function resetGame() {
+            bird.y = canvas.height / 2;
+            bird.velocity = 0;
+            bird.rotation = 0;
+            pipes = [];
+            coinsList = [];
+            score = 0;
+            sessionCoins = 0;
+            frameCount = 0;
+            slowmoTimer = 0;
+            isSlowmoActive = false;
+            phaserTimer = 0;
+            isPhaserActive = false;
+            hasUsedSecondLifeThisRound = false;
+            hasUsedSlowmoThisRound = false;
+            hasUsedPhaserThisRound = false;
+            gameContainer.classList.remove('slowmo-active', 'phaser-active');
+            updateHud();
+        }
+
+        function triggerJump() {
+            if (gameState === 'PLAYING') {
+                bird.velocity = bird.jumpStrength;
+                playSound('jump');
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (gameState === 'PLAYING') {
+                if (e.code === 'Space') {
+                    e.preventDefault();
+                    triggerJump();
+                } else if (e.code === 'KeyS' && (upgrades.slowmoLevel || 0) > 0 && !hasUsedSlowmoThisRound && !isSlowmoActive) {
+                    activateSlowmo();
+                } else if (e.code === 'KeyP' && (upgrades.phaserLevel || 0) > 0 && !hasUsedPhaserThisRound && !isPhaserActive) {
+                    activatePhaser();
+                }
+            }
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (gameState === 'PLAYING') {
+                triggerJump();
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameState === 'PLAYING') {
+                e.preventDefault();
+                triggerJump();
+            }
+        }, { passive: false });
+
+        hudSlowmo.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (gameState === 'PLAYING' && (upgrades.slowmoLevel || 0) > 0 && !hasUsedSlowmoThisRound && !isSlowmoActive) {
+                activateSlowmo();
+            }
+        });
+
+        hudPhaser.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (gameState === 'PLAYING' && (upgrades.phaserLevel || 0) > 0 && !hasUsedPhaserThisRound && !isPhaserActive) {
+                activatePhaser();
+            }
+        });
+
+        function activateSlowmo() {
+            const level = upgrades.slowmoLevel || 0;
+            if (level <= 0 || hasUsedSlowmoThisRound) return;
+            hasUsedSlowmoThisRound = true;
+            slowmoTimer = level * 5 * 60;
+            isSlowmoActive = true;
+            gameContainer.classList.add('slowmo-active');
+            playSound('powerup');
+            updateHud();
+        }
+
+        function activatePhaser() {
+            const level = upgrades.phaserLevel || 0;
+            if (level <= 0 || hasUsedPhaserThisRound) return;
+            hasUsedPhaserThisRound = true;
+            phaserTimer = level * 5 * 60;
+            isPhaserActive = true;
+            gameContainer.classList.add('phaser-active');
+            playSound('powerup');
+            updateHud();
+        }
+
+        startBtn.addEventListener('click', () => {
+            initAudio();
+            if (!musicPlaying) {
+                toggleMusic();
+            }
+            resetGame();
+            gameState = 'PLAYING';
+            startScreen.classList.add('hidden');
+            hudPowerups.classList.remove('hidden');
+        });
+
+        restartBtn.addEventListener('click', () => {
+            initAudio();
+            resetGame();
+            gameState = 'PLAYING';
+            gameOverScreen.classList.add('hidden');
+            hudPowerups.classList.remove('hidden');
+        });
+
+        menuBtn.addEventListener('click', () => {
+            gameOverScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            hudPowerups.classList.add('hidden');
+            gameState = 'START';
+        });
+
+        function addPipe() {
+            const minHeight = 60;
+            const maxHeight = canvas.height - pipeGap - 100;
+            const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+            
+            pipes.push({
+                x: canvas.width,
+                top: topHeight,
+                bottom: canvas.height - topHeight - pipeGap,
+                passed: false
+            });
+
+            coinsList.push({
+                x: canvas.width + (pipeWidth / 2) - 12,
+                y: topHeight + (pipeGap / 2) - 12,
+                radius: 12,
+                collected: false
+            });
+        }
+
+        function update() {
+            if (gameState !== 'PLAYING') return;
+
+            frameCount++;
+            
+            let speedMod = 1.0;
+            let gravMod = 1.0;
+            if (isSlowmoActive) {
+                speedMod = 0.5;
+                gravMod = 0.5;
+                slowmoTimer--;
+                if (slowmoTimer <= 0) {
+                    isSlowmoActive = false;
+                    gameContainer.classList.remove('slowmo-active');
+                }
+            }
+
+            if (isPhaserActive) {
+                phaserTimer--;
+                if (phaserTimer <= 0) {
+                    isPhaserActive = false;
+                    gameContainer.classList.remove('phaser-active');
+                }
+            }
+
+            villageX -= villageSpeed * speedMod;
+            if (villageX <= -300) villageX = 0;
+
+            bird.velocity += bird.gravity * gravMod;
+            bird.y += bird.velocity * speedMod;
+            bird.rotation = Math.min(Math.PI / 3, Math.max(-Math.PI / 4, (bird.velocity / 10) * Math.PI));
+
+            if (bird.y + bird.radius >= canvas.height - 25) {
+                bird.y = canvas.height - 25 - bird.radius;
+                handleCrash();
+            }
+            if (bird.y - bird.radius <= 0) {
+                bird.y = bird.radius;
+                bird.velocity = 0;
+            }
+
+            if (frameCount % Math.round(140 / speedMod) === 0) {
+                addPipe();
+            }
+
+            coinsList.forEach(coin => {
+                coin.x -= pipeSpeed * speedMod;
+                if (!coin.collected && Math.hypot(bird.x - (coin.x + coin.radius), bird.y - (coin.y + coin.radius)) < bird.radius + coin.radius) {
+                    coin.collected = true;
+                    sessionCoins++;
+                    playSound('coin');
+                }
+            });
+
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= pipeSpeed * speedMod;
+
+                if (!pipes[i].passed && pipes[i].x + pipeWidth < bird.x) {
+                    pipes[i].passed = true;
+                    score++;
+                    playSound('score');
+                    checkAchievements(score);
+                }
+
+                if (
+                    bird.x + bird.radius - 4 > pipes[i].x &&
+                    bird.x - bird.radius + 4 < pipes[i].x + pipeWidth &&
+                    (bird.y - bird.radius + 4 < pipes[i].top || bird.y + bird.radius - 4 > canvas.height - pipes[i].bottom)
+                ) {
+                    handleCrash();
+                }
+
+                if (pipes[i].x + pipeWidth < 0) {
+                    pipes.splice(i, 1);
+                }
+            }
+
+            snowflakes.forEach(flake => {
+                flake.y += flake.speedY * speedMod;
+                flake.x += flake.speedX * speedMod;
+                if (flake.y > canvas.height) {
+                    flake.y = 0;
+                    flake.x = Math.random() * canvas.width;
+                }
+            });
+        }
+
+        function handleCrash() {
+            if (isPhaserActive) {
+                return;
+            }
+
+            if (upgrades.secondLife > 0 && !hasUsedSecondLifeThisRound) {
+                hasUsedSecondLifeThisRound = true;
+                upgrades.secondLife--;
+                saveUpgrades();
+                updateHud();
+                playSound('powerup');
+                bird.y = canvas.height / 2;
+                bird.velocity = 0;
+                if (pipes.length > 0) pipes.shift();
+                return;
+            }
+
+            gameOver();
+        }
+
+        function triggerVictory() {
+            gameState = 'VICTORY';
+            playSound('powerup');
+            hudPowerups.classList.add('hidden');
+
+            coins += sessionCoins;
+            saveUpgrades();
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('wintery_wonderland_best', bestScore);
+            }
+
+            victoryScreen.classList.remove('hidden');
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            playSound('crash');
+            hudPowerups.classList.add('hidden');
+
+            coins += sessionCoins;
+            saveUpgrades();
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('wintery_wonderland_best', bestScore);
+            }
+
+            finalScoreEl.innerText = score;
+            bestScoreEl.innerText = bestScore;
+            finalCoinsEl.innerText = `+${sessionCoins} ❄️`;
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            bgGrad.addColorStop(0, '#020617');
+            bgGrad.addColorStop(0.5, '#091e3a');
+            bgGrad.addColorStop(1, '#11294a');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            stars.forEach(star => {
+                star.alpha += star.speed;
+                if (star.alpha > 1 || star.alpha < 0.2) star.speed = -star.speed;
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.abs(star.alpha)})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.save();
+            ctx.translate(villageX, 0);
+            
+            for (let offset = 0; offset < canvas.width + 300; offset += 300) {
+                const baseH = canvas.height - 25;
+
+                ctx.fillStyle = '#10223b';
+                ctx.beginPath();
+                ctx.moveTo(offset, baseH);
+                ctx.lineTo(offset + 150, baseH - 120);
+                ctx.lineTo(offset + 300, baseH);
+                ctx.fill();
+
+                ctx.fillStyle = '#1a304a';
+                ctx.fillRect(offset + 40, baseH - 70, 50, 70);
+                ctx.fillStyle = '#fde047';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#fde047';
+                ctx.fillRect(offset + 55, baseH - 50, 20, 20);
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#cbd5e1';
+                ctx.beginPath();
+                ctx.moveTo(offset + 30, baseH - 70);
+                ctx.lineTo(offset + 65, baseH - 105);
+                ctx.lineTo(offset + 100, baseH - 70);
+                ctx.fill();
+
+                ctx.fillStyle = '#0b1d30';
+                ctx.beginPath();
+                ctx.moveTo(offset + 130, baseH);
+                ctx.lineTo(offset + 115, baseH - 60);
+                ctx.lineTo(offset + 145, baseH - 60);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(offset + 130, baseH - 40);
+                ctx.lineTo(offset + 120, baseH - 95);
+                ctx.lineTo(offset + 140, baseH - 95);
+                ctx.fill();
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(offset + 124, baseH - 96, 12, 3);
+
+                ctx.fillStyle = '#162b42';
+                ctx.fillRect(offset + 180, baseH - 90, 60, 90);
+                ctx.fillStyle = '#fde047';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#fde047';
+                ctx.fillRect(offset + 195, baseH - 70, 16, 22);
+                ctx.fillRect(offset + 215, baseH - 70, 16, 22);
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#cbd5e1';
+                ctx.beginPath();
+                ctx.moveTo(offset + 170, baseH - 90);
+                ctx.lineTo(offset + 210, baseH - 130);
+                ctx.lineTo(offset + 250, baseH - 90);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            pipes.forEach(pipe => {
+                ctx.save();
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#38bdf8';
+                
+                const pipeGrad = ctx.createLinearGradient(pipe.x, 0, pipe.x + pipeWidth, 0);
+                pipeGrad.addColorStop(0, '#0284c7');
+                pipeGrad.addColorStop(0.5, '#38bdf8');
+                pipeGrad.addColorStop(1, '#0284c7');
+                ctx.fillStyle = pipeGrad;
+
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+                ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
+
+                ctx.fillStyle = '#e0f2fe';
+                ctx.fillRect(pipe.x - 4, pipe.top - 18, pipeWidth + 8, 18);
+                ctx.fillRect(pipe.x - 4, canvas.height - pipe.bottom, pipeWidth + 8, 18);
+                
+                ctx.restore();
+            });
+
+            coinsList.forEach(coin => {
+                if (!coin.collected) {
+                    ctx.save();
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#38bdf8';
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.beginPath();
+                    ctx.arc(coin.x + coin.radius, coin.y + coin.radius, coin.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '12px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('❄️', coin.x + coin.radius, coin.y + coin.radius);
+                    ctx.restore();
+                }
+            });
+
+            ctx.fillStyle = '#cbd5e1';
+            ctx.fillRect(0, canvas.height - 25, canvas.width, 25);
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#ffffff';
+            ctx.fillRect(0, canvas.height - 25, canvas.width, 6);
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            snowflakes.forEach(flake => {
+                ctx.beginPath();
+                ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.save();
+            ctx.translate(bird.x, bird.y);
+            ctx.rotate(bird.rotation);
+
+            ctx.shadowBlur = 18;
+            ctx.shadowColor = isPhaserActive ? '#38bdf8' : (isSlowmoActive ? '#c084fc' : '#38bdf8');
+
+            const birdGrad = ctx.createRadialGradient(-4, -4, 2, 0, 0, bird.radius);
+            birdGrad.addColorStop(0, '#e0f2fe');
+            birdGrad.addColorStop(1, isPhaserActive ? '#0284c7' : (isSlowmoActive ? '#9333ea' : '#0284c7'));
+            ctx.fillStyle = birdGrad;
+            ctx.beginPath();
+            ctx.arc(0, 0, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (isPhaserActive) {
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, bird.radius + 6, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(6, -4, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#020617';
+            ctx.beginPath();
+            ctx.arc(8, -4, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#fbbf24';
+            ctx.beginPath();
+            ctx.moveTo(bird.radius - 2, -1);
+            ctx.lineTo(bird.radius + 9, 3);
+            ctx.lineTo(bird.radius - 2, 7);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+
+            if (gameState === 'PLAYING') {
+                ctx.font = 'bold 54px "Fredoka", sans-serif';
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = 'rgba(56, 189, 248, 0.8)';
+                ctx.fillText(score, canvas.width / 2, 80);
+                
+                ctx.font = 'bold 20px "Fredoka", sans-serif';
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillText(`${sessionCoins} ❄️`, canvas.width / 2, 115);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>
