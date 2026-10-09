@@ -1141,16 +1141,17 @@
 
             ctx.restore();
 
-            // DRAW SCORE COUNTER DURING GAMEPLAY
+            // SCORE COUNTER DISPLAY (Visible during gameplay)
             if (gameState === 'PLAYING') {
+                ctx.save();
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 36px Fredoka';
+                ctx.font = 'bold 42px Fredoka';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top';
-                ctx.shadowColor = 'rgba(56, 189, 248, 0.8)';
-                ctx.shadowBlur = 10;
-                ctx.fillText(score, canvas.width / 2, 60);
-                ctx.shadowBlur = 0; // Reset shadow
+                ctx.shadowColor = '#38bdf8';
+                ctx.shadowBlur = 12;
+                ctx.fillText(score, canvas.width / 2, 50);
+                ctx.restore();
             }
         }
 
