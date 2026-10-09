@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name='admaven-placement' content='BpdU5qjw5'>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Wintery Wonderland</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
@@ -842,57 +841,27 @@
         });
 
         function activateSlowmo() {
-            const level = upgrades.slowmoLevel || 0;
-            if (level <= 0 || hasUsedSlowmoThisRound) return;
-            hasUsedSlowmoThisRound = true;
-            slowmoTimer = level * 5 * 60;
             isSlowmoActive = true;
+            hasUsedSlowmoThisRound = true;
+            slowmoTimer = (upgrades.slowmoLevel || 1) * 300; 
             gameContainer.classList.add('slowmo-active');
             playSound('powerup');
             updateHud();
         }
 
         function activatePhaser() {
-            const level = upgrades.phaserLevel || 0;
-            if (level <= 0 || hasUsedPhaserThisRound) return;
-            hasUsedPhaserThisRound = true;
-            phaserTimer = level * 5 * 60;
             isPhaserActive = true;
+            hasUsedPhaserThisRound = true;
+            phaserTimer = (upgrades.phaserLevel || 1) * 300; 
             gameContainer.classList.add('phaser-active');
             playSound('powerup');
             updateHud();
         }
 
-        startBtn.addEventListener('click', () => {
-            initAudio();
-            if (!musicPlaying) {
-                toggleMusic();
-            }
-            resetGame();
-            gameState = 'PLAYING';
-            startScreen.classList.add('hidden');
-            hudPowerups.classList.remove('hidden');
-        });
-
-        restartBtn.addEventListener('click', () => {
-            initAudio();
-            resetGame();
-            gameState = 'PLAYING';
-            gameOverScreen.classList.add('hidden');
-            hudPowerups.classList.remove('hidden');
-        });
-
-        menuBtn.addEventListener('click', () => {
-            gameOverScreen.classList.add('hidden');
-            startScreen.classList.remove('hidden');
-            hudPowerups.classList.add('hidden');
-            gameState = 'START';
-        });
-
-        function addPipe() {
-            const minHeight = 60;
-            const maxHeight = canvas.height - pipeGap - 100;
-            const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+        function spawnPipe() {
+            let minHeight = 60;
+            let maxHeight = canvas.height - pipeGap - 120;
+            let topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
             
             pipes.push({
                 x: canvas.width,
@@ -901,24 +870,82 @@
                 passed: false
             });
 
-            coinsList.push({
-                x: canvas.width + (pipeWidth / 2) - 12,
-                y: topHeight + (pipeGap / 2) - 12,
-                radius: 12,
-                collected: false
-            });
+            if (Math.random() < 0.65) {
+                coinsList.push({
+                    x: canvas.width + pipeWidth / 2 - 12,
+                    y: topHeight + pipeGap / 2 - 12,
+                    collected: false
+                });
+            }
         }
+
+        function triggerGameOver() {
+            if (upgrades.secondLife > 0 && !hasUsedSecondLifeThisRound) {
+                hasUsedSecondLifeThisRound = true;
+                bird.y = canvas.height / 2;
+                bird.velocity = 0;
+                pipes = [];
+                playSound('powerup');
+                updateHud();
+                return;
+            }
+
+            gameState = 'GAMEOVER';
+            playSound('crash');
+            coins += sessionCoins;
+            saveUpgrades();
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('wintery_wonderland_best', bestScore);
+            }
+
+            finalScoreEl.innerText = score;
+            bestScoreEl.innerText = bestScore;
+            finalCoinsEl.innerText = `+${sessionCoins} ❄️`;
+            gameOverScreen.classList.remove('hidden');
+            hudPowerups.classList.add('hidden');
+        }
+
+        function triggerVictory() {
+            gameState = 'VICTORY';
+            playSound('powerup');
+            coins += sessionCoins;
+            saveUpgrades();
+            victoryScreen.classList.remove('hidden');
+            hudPowerups.classList.add('hidden');
+        }
+
+        startBtn.addEventListener('click', () => {
+            initAudio();
+            resetGame();
+            gameState = 'PLAYING';
+            startScreen.classList.add('hidden');
+            hudPowerups.classList.remove('hidden');
+        });
+
+        restartBtn.addEventListener('click', () => {
+            resetGame();
+            gameState = 'PLAYING';
+            gameOverScreen.classList.add('hidden');
+            hudPowerups.classList.remove('hidden');
+        });
+
+        menuBtn.addEventListener('click', () => {
+            gameState = 'START';
+            gameOverScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
 
         function update() {
             if (gameState !== 'PLAYING') return;
 
-            frameCount++;
-            
-            let speedMod = 1.0;
-            let gravMod = 1.0;
+            let currentSpeed = pipeSpeed;
+            let currentGravity = bird.gravity;
+
             if (isSlowmoActive) {
-                speedMod = 0.5;
-                gravMod = 0.5;
+                currentSpeed *= 0.5;
+                currentGravity *= 0.4;
                 slowmoTimer--;
                 if (slowmoTimer <= 0) {
                     isSlowmoActive = false;
@@ -934,37 +961,41 @@
                 }
             }
 
-            villageX -= villageSpeed * speedMod;
-            if (villageX <= -300) villageX = 0;
+            bird.velocity += currentGravity;
+            bird.y += bird.velocity;
+            bird.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (bird.velocity / 10) * (Math.PI / 4)));
 
-            bird.velocity += bird.gravity * gravMod;
-            bird.y += bird.velocity * speedMod;
-            bird.rotation = Math.min(Math.PI / 3, Math.max(-Math.PI / 4, (bird.velocity / 10) * Math.PI));
-
-            if (bird.y + bird.radius >= canvas.height - 25) {
-                bird.y = canvas.height - 25 - bird.radius;
-                handleCrash();
+            if (bird.y + bird.radius >= canvas.height - 30) {
+                bird.y = canvas.height - 30 - bird.radius;
+                triggerGameOver();
+                return;
             }
             if (bird.y - bird.radius <= 0) {
                 bird.y = bird.radius;
                 bird.velocity = 0;
             }
 
-            if (frameCount % Math.round(140 / speedMod) === 0) {
-                addPipe();
+            frameCount++;
+            if (frameCount % 110 === 0) {
+                spawnPipe();
             }
 
-            coinsList.forEach(coin => {
-                coin.x -= pipeSpeed * speedMod;
-                if (!coin.collected && Math.hypot(bird.x - (coin.x + coin.radius), bird.y - (coin.y + coin.radius)) < bird.radius + coin.radius) {
-                    coin.collected = true;
-                    sessionCoins++;
-                    playSound('coin');
-                }
-            });
+            villageX -= villageSpeed;
+            if (villageX <= -canvas.width) villageX = 0;
 
             for (let i = pipes.length - 1; i >= 0; i--) {
-                pipes[i].x -= pipeSpeed * speedMod;
+                pipes[i].x -= currentSpeed;
+
+                if (!isPhaserActive) {
+                    if (
+                        bird.x + bird.radius > pipes[i].x &&
+                        bird.x - bird.radius < pipes[i].x + pipeWidth &&
+                        (bird.y - bird.radius < pipes[i].top || bird.y + bird.radius > canvas.height - pipes[i].bottom)
+                    ) {
+                        triggerGameOver();
+                        return;
+                    }
+                }
 
                 if (!pipes[i].passed && pipes[i].x + pipeWidth < bird.x) {
                     pipes[i].passed = true;
@@ -973,271 +1004,139 @@
                     checkAchievements(score);
                 }
 
-                if (
-                    bird.x + bird.radius - 4 > pipes[i].x &&
-                    bird.x - bird.radius + 4 < pipes[i].x + pipeWidth &&
-                    (bird.y - bird.radius + 4 < pipes[i].top || bird.y + bird.radius - 4 > canvas.height - pipes[i].bottom)
-                ) {
-                    handleCrash();
-                }
-
-                if (pipes[i].x + pipeWidth < 0) {
+                if (pipes[i].x + pipeWidth < -50) {
                     pipes.splice(i, 1);
                 }
             }
 
-            snowflakes.forEach(flake => {
-                flake.y += flake.speedY * speedMod;
-                flake.x += flake.speedX * speedMod;
-                if (flake.y > canvas.height) {
-                    flake.y = 0;
-                    flake.x = Math.random() * canvas.width;
+            for (let i = coinsList.length - 1; i >= 0; i--) {
+                coinsList[i].x -= currentSpeed;
+
+                let dx = bird.x - (coinsList[i].x + 12);
+                let dy = bird.y - (coinsList[i].y + 12);
+                let dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (!coinsList[i].collected && dist < bird.radius + 16) {
+                    coinsList[i].collected = true;
+                    sessionCoins++;
+                    playSound('coin');
                 }
-            });
-        }
 
-        function handleCrash() {
-            if (isPhaserActive) {
-                return;
+                if (coinsList[i].x < -50 || coinsList[i].collected) {
+                    coinsList.splice(i, 1);
+                }
             }
-
-            if (upgrades.secondLife > 0 && !hasUsedSecondLifeThisRound) {
-                hasUsedSecondLifeThisRound = true;
-                upgrades.secondLife--;
-                saveUpgrades();
-                updateHud();
-                playSound('powerup');
-                bird.y = canvas.height / 2;
-                bird.velocity = 0;
-                if (pipes.length > 0) pipes.shift();
-                return;
-            }
-
-            gameOver();
-        }
-
-        function triggerVictory() {
-            gameState = 'VICTORY';
-            playSound('powerup');
-            hudPowerups.classList.add('hidden');
-
-            coins += sessionCoins;
-            saveUpgrades();
-
-            if (score > bestScore) {
-                bestScore = score;
-                localStorage.setItem('wintery_wonderland_best', bestScore);
-            }
-
-            victoryScreen.classList.remove('hidden');
-        }
-
-        function gameOver() {
-            gameState = 'GAMEOVER';
-            playSound('crash');
-            hudPowerups.classList.add('hidden');
-
-            coins += sessionCoins;
-            saveUpgrades();
-
-            if (score > bestScore) {
-                bestScore = score;
-                localStorage.setItem('wintery_wonderland_best', bestScore);
-            }
-
-            finalScoreEl.innerText = score;
-            bestScoreEl.innerText = bestScore;
-            finalCoinsEl.innerText = `+${sessionCoins} ❄️`;
-            gameOverScreen.classList.remove('hidden');
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            bgGrad.addColorStop(0, '#020617');
-            bgGrad.addColorStop(0.5, '#091e3a');
-            bgGrad.addColorStop(1, '#11294a');
-            ctx.fillStyle = bgGrad;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
             stars.forEach(star => {
                 star.alpha += star.speed;
-                if (star.alpha > 1 || star.alpha < 0.2) star.speed = -star.speed;
+                if (star.alpha > 1 || star.alpha < 0) star.speed = -star.speed;
                 ctx.fillStyle = `rgba(255, 255, 255, ${Math.abs(star.alpha)})`;
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
                 ctx.fill();
             });
 
-            ctx.save();
-            ctx.translate(villageX, 0);
-            
-            for (let offset = 0; offset < canvas.width + 300; offset += 300) {
-                const baseH = canvas.height - 25;
-
-                ctx.fillStyle = '#10223b';
-                ctx.beginPath();
-                ctx.moveTo(offset, baseH);
-                ctx.lineTo(offset + 150, baseH - 120);
-                ctx.lineTo(offset + 300, baseH);
-                ctx.fill();
-
-                ctx.fillStyle = '#1a304a';
-                ctx.fillRect(offset + 40, baseH - 70, 50, 70);
-                ctx.fillStyle = '#fde047';
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = '#fde047';
-                ctx.fillRect(offset + 55, baseH - 50, 20, 20);
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = '#cbd5e1';
-                ctx.beginPath();
-                ctx.moveTo(offset + 30, baseH - 70);
-                ctx.lineTo(offset + 65, baseH - 105);
-                ctx.lineTo(offset + 100, baseH - 70);
-                ctx.fill();
-
-                ctx.fillStyle = '#0b1d30';
-                ctx.beginPath();
-                ctx.moveTo(offset + 130, baseH);
-                ctx.lineTo(offset + 115, baseH - 60);
-                ctx.lineTo(offset + 145, baseH - 60);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.moveTo(offset + 130, baseH - 40);
-                ctx.lineTo(offset + 120, baseH - 95);
-                ctx.lineTo(offset + 140, baseH - 95);
-                ctx.fill();
-                ctx.fillStyle = '#e2e8f0';
-                ctx.fillRect(offset + 124, baseH - 96, 12, 3);
-
-                ctx.fillStyle = '#162b42';
-                ctx.fillRect(offset + 180, baseH - 90, 60, 90);
-                ctx.fillStyle = '#fde047';
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = '#fde047';
-                ctx.fillRect(offset + 195, baseH - 70, 16, 22);
-                ctx.fillRect(offset + 215, baseH - 70, 16, 22);
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = '#cbd5e1';
-                ctx.beginPath();
-                ctx.moveTo(offset + 170, baseH - 90);
-                ctx.lineTo(offset + 210, baseH - 130);
-                ctx.lineTo(offset + 250, baseH - 90);
-                ctx.fill();
-            }
-            ctx.restore();
-
-            pipes.forEach(pipe => {
-                ctx.save();
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = '#38bdf8';
-                
-                const pipeGrad = ctx.createLinearGradient(pipe.x, 0, pipe.x + pipeWidth, 0);
-                pipeGrad.addColorStop(0, '#0284c7');
-                pipeGrad.addColorStop(0.5, '#38bdf8');
-                pipeGrad.addColorStop(1, '#0284c7');
-                ctx.fillStyle = pipeGrad;
-
-                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
-                ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
-
-                ctx.fillStyle = '#e0f2fe';
-                ctx.fillRect(pipe.x - 4, pipe.top - 18, pipeWidth + 8, 18);
-                ctx.fillRect(pipe.x - 4, canvas.height - pipe.bottom, pipeWidth + 8, 18);
-                
-                ctx.restore();
-            });
-
-            coinsList.forEach(coin => {
-                if (!coin.collected) {
-                    ctx.save();
-                    ctx.shadowBlur = 12;
-                    ctx.shadowColor = '#38bdf8';
-                    ctx.fillStyle = '#38bdf8';
-                    ctx.beginPath();
-                    ctx.arc(coin.x + coin.radius, coin.y + coin.radius, coin.radius, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = '12px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('❄️', coin.x + coin.radius, coin.y + coin.radius);
-                    ctx.restore();
-                }
-            });
-
-            ctx.fillStyle = '#cbd5e1';
-            ctx.fillRect(0, canvas.height - 25, canvas.width, 25);
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = '#ffffff';
-            ctx.fillRect(0, canvas.height - 25, canvas.width, 6);
-            ctx.shadowBlur = 0;
-
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
             snowflakes.forEach(flake => {
+                flake.y += flake.speedY;
+                flake.x += flake.speedX;
+                if (flake.y > canvas.height) {
+                    flake.y = -10;
+                    flake.x = Math.random() * canvas.width;
+                }
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
                 ctx.beginPath();
                 ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
                 ctx.fill();
+            });
+
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(villageX, canvas.height - 65, canvas.width, 35);
+            ctx.fillRect(villageX + canvas.width, canvas.height - 65, canvas.width, 35);
+
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(villageX + 25, canvas.height - 90, 30, 25);
+            ctx.fillRect(villageX + 85, canvas.height - 110, 40, 45);
+            ctx.fillRect(villageX + 160, canvas.height - 95, 35, 30);
+            ctx.fillRect(villageX + 250, canvas.height - 120, 45, 55);
+
+            ctx.fillRect(villageX + canvas.width + 25, canvas.height - 90, 30, 25);
+            ctx.fillRect(villageX + canvas.width + 85, canvas.height - 110, 40, 45);
+            ctx.fillRect(villageX + canvas.width + 160, canvas.height - 95, 35, 30);
+            ctx.fillRect(villageX + canvas.width + 250, canvas.height - 120, 45, 55);
+
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+            ctx.fillStyle = '#bae6fd';
+            ctx.fillRect(0, canvas.height - 30, canvas.width, 6);
+
+            pipes.forEach(pipe => {
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(pipe.x - 4, pipe.top - 18, pipeWidth + 8, 18);
+
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fillRect(pipe.x - 4, canvas.height - pipe.bottom, pipeWidth + 8, 18);
+            });
+
+            coinsList.forEach(c => {
+                if (!c.collected) {
+                    ctx.save();
+                    ctx.translate(c.x + 12, c.y + 12);
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#020617';
+                    ctx.font = 'bold 12px Fredoka';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('❄️', 0, 1);
+                    ctx.restore();
+                }
             });
 
             ctx.save();
             ctx.translate(bird.x, bird.y);
             ctx.rotate(bird.rotation);
 
-            ctx.shadowBlur = 18;
-            ctx.shadowColor = isPhaserActive ? '#38bdf8' : (isSlowmoActive ? '#c084fc' : '#38bdf8');
-
-            const birdGrad = ctx.createRadialGradient(-4, -4, 2, 0, 0, bird.radius);
-            birdGrad.addColorStop(0, '#e0f2fe');
-            birdGrad.addColorStop(1, isPhaserActive ? '#0284c7' : (isSlowmoActive ? '#9333ea' : '#0284c7'));
-            ctx.fillStyle = birdGrad;
+            ctx.fillStyle = isPhaserActive ? '#38bdf8' : '#e0f2fe';
             ctx.beginPath();
             ctx.arc(0, 0, bird.radius, 0, Math.PI * 2);
             ctx.fill();
 
-            if (isPhaserActive) {
-                ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.arc(0, 0, bird.radius + 6, 0, Math.PI * 2);
-                ctx.stroke();
-            }
-
-            ctx.shadowBlur = 0;
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = '#0284c7';
             ctx.beginPath();
-            ctx.arc(6, -4, 5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#020617';
-            ctx.beginPath();
-            ctx.arc(8, -4, 2, 0, Math.PI * 2);
+            ctx.arc(4, -4, 4, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.fillStyle = '#fbbf24';
+            ctx.fillStyle = '#f97316';
             ctx.beginPath();
-            ctx.moveTo(bird.radius - 2, -1);
-            ctx.lineTo(bird.radius + 9, 3);
-            ctx.lineTo(bird.radius - 2, 7);
+            ctx.moveTo(bird.radius - 2, 0);
+            ctx.lineTo(bird.radius + 8, -4);
+            ctx.lineTo(bird.radius + 8, 4);
             ctx.closePath();
             ctx.fill();
 
-            ctx.restore();
+            ctx.fillStyle = '#f43f5e';
+            ctx.beginPath();
+            ctx.moveTo(-6, -bird.radius + 2);
+            ctx.lineTo(6, -bird.radius - 8);
+            ctx.lineTo(2, -bird.radius + 2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(4, -bird.radius - 6, 3, 0, Math.PI * 2);
+            ctx.fill();
 
-            if (gameState === 'PLAYING') {
-                ctx.font = 'bold 54px "Fredoka", sans-serif';
-                ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'center';
-                ctx.shadowBlur = 12;
-                ctx.shadowColor = 'rgba(56, 189, 248, 0.8)';
-                ctx.fillText(score, canvas.width / 2, 80);
-                
-                ctx.font = 'bold 20px "Fredoka", sans-serif';
-                ctx.fillStyle = '#38bdf8';
-                ctx.fillText(`${sessionCoins} ❄️`, canvas.width / 2, 115);
-                ctx.shadowBlur = 0;
-            }
+            ctx.restore();
         }
 
         function loop() {
@@ -1248,5 +1147,8 @@
 
         loop();
     </script>
+
+    <!-- Adsterra Social Bar Script -->
+    <script data-cfasync="false" src="https://bauval.org/14/d825ecae5683c5a399f98293e0b6f663"></script>
 </body>
 </html>
