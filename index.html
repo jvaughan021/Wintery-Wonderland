@@ -774,6 +774,12 @@
         }
 
         function resetGame() {
+            // AGGRESSIVELY REMOVE ADSTERRA SCRIPT ON NEW RUN TO PREVENT MID-GAME POPUPS
+            const existingAd = document.getElementById('adsterra-social-bar');
+            if (existingAd) {
+                existingAd.remove();
+            }
+
             bird.y = canvas.height / 2;
             bird.velocity = 0;
             bird.rotation = 0;
@@ -890,7 +896,7 @@
                 return;
             }
 
-            // Load Adsterra Social Bar dynamically only upon reaching Game Over
+            // Load Adsterra Social Bar dynamically ONLY upon reaching Game Over
             if (!document.getElementById('adsterra-social-bar')) {
                 const adScript = document.createElement('script');
                 adScript.id = 'adsterra-social-bar';
