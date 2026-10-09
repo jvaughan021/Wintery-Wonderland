@@ -391,7 +391,7 @@
         </div>
     </div>
 
-    <!-- Adsterra Social Bar Script (Stable Global Load) -->
+    <!-- Adsterra Social Bar Script -->
     <script data-cfasync="false" src="https://bauval.org/14/d825ecae5683c5a399f98293e0b6f663"></script>
 
     <script>
@@ -1140,6 +1140,18 @@
             ctx.fill();
 
             ctx.restore();
+
+            // DRAW SCORE COUNTER DURING GAMEPLAY
+            if (gameState === 'PLAYING') {
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 36px Fredoka';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.shadowColor = 'rgba(56, 189, 248, 0.8)';
+                ctx.shadowBlur = 10;
+                ctx.fillText(score, canvas.width / 2, 60);
+                ctx.shadowBlur = 0; // Reset shadow
+            }
         }
 
         function loop() {
